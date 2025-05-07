@@ -1,7 +1,7 @@
-// frontend/src/components/PhaseDisplay.jsx
 import React from 'react';
 import { cardImageUrl } from '../utils/cardImages.js';
 
+// Add PHASE_DESCRIPTIONS from your gameLogic
 const PHASE_DESCRIPTIONS = [
   'Two sets of three',
   'One set of three + one run of four',
@@ -12,7 +12,7 @@ const PHASE_DESCRIPTIONS = [
   'Two sets of four',
   'Seven cards of one color',
   'One set of five + one set of two',
-  'One set of five + one set of three',
+  'One set of five + one set of three'
 ];
 
 export default function PhaseDisplay({
@@ -26,7 +26,8 @@ export default function PhaseDisplay({
   hasDrawn,
   handOrder,
 }) {
-  // Safely pull the description for this phase
+  // Get the current player's phase description
+  const isMyTurn = localId === players.find(p => p.socketId === localId)?.socketId;
   const description = PHASE_DESCRIPTIONS[phaseIndex] || '';
 
   return (
@@ -36,13 +37,16 @@ export default function PhaseDisplay({
       </h2>
       <ul>
         {players.map((p) => {
-          // Get the groups this player has laid for the current phase
-          const groups =
-            (laid[phaseIndex] && laid[phaseIndex][p.socketId]) || [];
+          // Get this player's phase index and description
+          const playerPhaseIndex = p.phaseIndex || 0;
+          
+          // Get the groups this player has laid for their current phase
+          const groups = 
+            (laid[playerPhaseIndex] && laid[playerPhaseIndex][p.socketId]) || [];
 
           return (
             <li key={p.socketId} style={{ marginBottom: 8 }}>
-              <strong>{p.username}:</strong>{' '}
+              <strong>{p.username}:</strong> (Phase {playerPhaseIndex + 1}):{' '}
               {groups.length ? (
                 groups.map((grp, gi) => (
                   <span key={gi} style={{ marginRight: 8 }}>
@@ -56,25 +60,25 @@ export default function PhaseDisplay({
                       />
                     ))}{' '}
                     ]
-                    {/* “Hit” button */}
+                    {/* "Hit" button */}
                     <button
                       disabled={
-                        // must have drawn, and exactly one selected
                         !hasDrawn ||
                         selectedIndices.length !== 1 ||
-                        groups.length === 0
+                        groups.length === 0 ||
+                        !isMyTurn  // Add this condition to disable hitting when not your turn
                       }
-                      onClick={() =>{
+                      onClick={() => {
                         const cardToHit = handOrder[selectedIndices[0]];
                         socket.emit('hitPhase', {
                           room,
-                          phaseIndex,
+                          phaseIndex: playerPhaseIndex,  // Use this player's phase index
                           targetId: p.socketId,
                           groupIndex: gi,
                           card: cardToHit
                         });
-                      }
-                      }
+                        setSelectedIndices([]);
+                      }}
                       style={{ marginLeft: 4 }}
                     >
                       +

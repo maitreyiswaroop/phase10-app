@@ -46,9 +46,9 @@ export default function App() {
       setGameState(payload);
     });
 
-    socket.on('roundEnd', ({ winner, scores }) => {
-      console.log('🏆 Round over, winner:', winner, scores);
-      setRoundOver({ winner, scores });
+    socket.on('roundEnd', ({ winner, scores, roundNumber }) => {
+        console.log('🏆 Round over, winner:', winner, scores, roundNumber);
+        setRoundOver({ winner, scores, roundNumber });
     });
     
     // Cleanup listeners on unmount
@@ -92,28 +92,35 @@ export default function App() {
         
         <h2>Round Results</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-          <thead>
+        <thead>
             <tr style={{ backgroundColor: '#f2f2f2' }}>
-              <th style={{ padding: 8, border: '1px solid #ddd' }}>Player</th>
-              <th style={{ padding: 8, border: '1px solid #ddd' }}>Cards Left</th>
-              <th style={{ padding: 8, border: '1px solid #ddd' }}>Points Added</th>
-              <th style={{ padding: 8, border: '1px solid #ddd' }}>Total Score</th>
-              <th style={{ padding: 8, border: '1px solid #ddd' }}>Next Phase</th>
+            <th style={{ padding: 8, border: '1px solid #ddd' }}>Player</th>
+            <th style={{ padding: 8, border: '1px solid #ddd' }}>Cards Left</th>
+            <th style={{ padding: 8, border: '1px solid #ddd' }}>Points Added</th>
+            <th style={{ padding: 8, border: '1px solid #ddd' }}>Total Score</th>
+            <th style={{ padding: 8, border: '1px solid #ddd' }}>Current Phase</th>
+            <th style={{ padding: 8, border: '1px solid #ddd' }}>Next Round</th>
             </tr>
-          </thead>
-          <tbody>
+        </thead>
+        <tbody>
             {roundOver.scores.map(s => (
-              <tr key={s.socketId} style={{
+            <tr key={s.socketId} style={{
                 backgroundColor: s.socketId === roundOver.winner ? '#d4edda' : 'transparent'
-              }}>
+            }}>
                 <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.player}</td>
                 <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.handSize}</td>
                 <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.roundPoints}</td>
                 <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.totalScore}</td>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>Phase {s.currentPhase + 1}</td>
-              </tr>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>
+                Phase {s.currentPhase + 1}
+                {s.willAdvance && <span style={{color: 'green'}}> ✓</span>}
+                </td>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>
+                Phase {s.nextPhase + 1}
+                </td>
+            </tr>
             ))}
-          </tbody>
+        </tbody>
         </table>
         
         <button 
@@ -131,7 +138,7 @@ export default function App() {
             cursor: 'pointer'
           }}
         >
-          Start Round {(roundOver.roundNumber || 0) + 1}
+          Start Round {roundOver.roundNumber + 1}
         </button>
       </div>
     );
@@ -150,7 +157,7 @@ export default function App() {
         room={roomInfo.room}
         currentTurn={gameState.currentTurn}
         laid={gameState.laid}
-        phaseIndex={phaseIndex}
+        // phaseIndex={phaseIndex}
         hasDrawn={gameState.hasDrawn}
       />
     );

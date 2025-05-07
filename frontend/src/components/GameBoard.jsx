@@ -16,8 +16,10 @@ export default function GameBoard({
   currentTurn,
   hasDrawn,
   laid,
-  phaseIndex,
+//   phaseIndex,
 }) {
+    const currentPlayer = players.find(p => p.socketId === localId);
+    const currentPhaseIndex = currentPlayer?.phaseIndex || 0;
   // Keep a local, mutable copy of your hand order
   const [handOrder, setHandOrder] = useState(hands[localId] || []);
   const [selectedIndices, setSelectedIndices] = useState([]);
@@ -34,10 +36,10 @@ export default function GameBoard({
 
   // Clear any leftover selection once you've successfully laid
   useEffect(() => {
-    if (laid[phaseIndex]?.[localId]) {
+    if (laid[currentPhaseIndex]?.[localId]) {
       setSelectedIndices([]);
     }
-  }, [laid, phaseIndex, localId]);
+  }, [laid, currentPhaseIndex, localId]);
 
   // Handle drag end: reorder locally
   function onDragEnd(result) {
@@ -61,7 +63,7 @@ export default function GameBoard({
       <h1>Phase 10 Online</h1>
 
       <PhaseDisplay
-        phaseIndex={phaseIndex}
+        phaseIndex={currentPhaseIndex}
         laid={laid}
         players={players}
         localId={localId}
@@ -70,6 +72,7 @@ export default function GameBoard({
         selectedIndices={selectedIndices}
         hasDrawn={hasDrawn}
         handOrder={handOrder}
+        setSelectedIndices={setSelectedIndices}
       />
       <p>
         Current turn:{' '}
@@ -180,13 +183,13 @@ export default function GameBoard({
             const cardsToLay = selectedIndices.map(i => handOrder[i]);
            socket.emit('layPhase', {
              room,
-             phaseIndex,
+             phaseIndex : currentPhaseIndex,
              cards: cardsToLay,
             });
            setSelectedIndices([]);
           }}
         >
-          Lay Phase (Phase {phaseIndex + 1})
+          Lay Phase (Phase {currentPhaseIndex + 1})
         </button>
 
         <button

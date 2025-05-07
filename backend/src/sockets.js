@@ -23,7 +23,7 @@ import {
           currentTurn: null,
           hasDrawn:   false,
           laid:       {},    // laid[phaseIndex] = { socketId: [cards] }
-          roundNumber: 0,
+          roundNumber: 1
         };
         socket.join(room);
         io.to(room).emit('joinedRoom', {
@@ -52,6 +52,8 @@ import {
         console.log('📥 startGame →', room);
         const r = rooms[room];
         if (!r) return;
+
+        if (!r.roundNumber) r.roundNumber = 1;
   
         const fullDeck = shuffle(createDeck());
         const { hands, deck: remaining } = deal(fullDeck, r.players);
@@ -166,14 +168,34 @@ import {
           });
           
           // compute player data to send to clients
-          const scores = r.players.map(p => ({
-            socketId: p.socketId,
-            player: p.username,
-            handSize: r.hands[p.socketId].length,
-            roundPoints: roundScores[p.socketId] || 0,
-            totalScore: p.score,
-            currentPhase: p.phaseIndex
-          }));
+          const completedPhases = {};
+            for (const phaseIndex in r.laid) {
+                for (const socketId in r.laid[phaseIndex]) {
+                    completedPhases[socketId] = parseInt(phaseIndex, 10);
+                }
+                }
+
+          const scores = r.players.map(p => {
+            const currentPhase = typeof p.phaseIndex === 'number' ? p.phaseIndex : 0;
+            const willAdvance = completedPhases[p.socketId] !== undefined;
+            let nextPhase;
+            if (willAdvance) {
+              nextPhase = (currentPhase + 1) % PHASES.length;
+            } else {
+              nextPhase = currentPhase;
+            }
+
+            return {
+              socketId: p.socketId,
+              player: p.username,
+              handSize: r.hands[p.socketId].length,
+              roundPoints: roundScores[p.socketId] || 0,
+              totalScore: p.score,
+              currentPhase: currentPhase,
+              nextPhase: nextPhase,
+              willAdvance: willAdvance
+            };
+          });
           
           // broadcast roundEnd
           io.to(room).emit('roundEnd', { 
@@ -195,13 +217,23 @@ import {
           socket.emit('error', 'Not your turn or must draw first');
           return;
         }
+
+        const playerIndex = r.players.findIndex(p => p.socketId === socket.id);
+        if (playerIndex < 0) return;
+
+        const actualPhaseIndex = r.players[playerIndex].phaseIndex || 0;
+
+        if (phaseIndex !== actualPhaseIndex) {
+            socket.emit('error', `You're on Phase ${actualPhaseIndex + 1}, not Phase ${phaseIndex + 1}`);
+            return;
+          }
   
         const hand     = r.hands[socket.id];
         const selected = cards;
   
         const { ok, groups } = validatePhase(phaseIndex, selected);
         if (!ok) {
-          socket.emit('error', 'Invalid phase combination');
+          socket.emit('error', 'Invalid phase combination for Phase ' + (phaseIndex + 1));
           return;
         }
   
@@ -271,18 +303,19 @@ import {
         
         // Update players: advance phase for those who completed theirs
         r.players = r.players.map(p => {
+            const currentPhase = typeof p.phaseIndex === 'number' ? p.phaseIndex : 0;
         if (completedPhases[p.socketId] !== undefined) {
             // Player completed their phase, move to next phase
-            const nextPhase = ((p.phaseIndex || 0) + 1) % PHASES.length;
+            // const nextPhase = ((p.phaseIndex || 0) + 1) % PHASES.length;
             return {
             ...p,
-            phaseIndex: nextPhase
+            phaseIndex:  (currentPhase + 1) % PHASES.length
             };
         } else {
             // Player didn't complete their phase, stay on same phase
             return {
             ...p,
-            phaseIndex: p.phaseIndex || 0
+            phaseIndex: currentPhase
             };
         }
         });
