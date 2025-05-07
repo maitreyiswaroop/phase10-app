@@ -307,6 +307,50 @@ function validateMixed(cards, requirements) {
   };
 }
 
+/**
+ * Validates if a card can be added to an existing meld
+ * @param {number} phaseIndex - The phase index
+ * @param {Array} existingGroup - The existing cards in the meld
+ * @param {Object} newCard - The card to add
+ * @returns {boolean} Whether the hit is valid
+ */
+export function validateHit(phaseIndex, existingGroup, newCard) {
+    // For sets (all cards have same value)
+    if (existingGroup.every(c => c.type === 'wild' || 
+                               (c.type === 'number' && existingGroup[0].type === 'number' && 
+                                c.value === existingGroup[0].value))) {
+      // New card must be wild or match the set value
+      return newCard.type === 'wild' || 
+             (newCard.type === 'number' && 
+              existingGroup[0].type === 'number' &&
+              newCard.value === existingGroup[0].value);
+    }
+    
+    // For runs (sequential values)
+    if (existingGroup.some(c => c.type === 'number')) {
+      // Find min and max values in the run
+      const values = existingGroup
+        .filter(c => c.type === 'number')
+        .map(c => c.value);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      
+      // New card must be wild or continue the run
+      return newCard.type === 'wild' || 
+             (newCard.type === 'number' && 
+              (newCard.value === min - 1 || newCard.value === max + 1));
+    }
+    
+    // For color groups
+    if (phaseIndex === 7) { // Phase 8 is "Seven cards of one color"
+      const groupColor = existingGroup.find(c => c.type === 'number')?.color;
+      return newCard.type === 'wild' || 
+             (newCard.type === 'number' && newCard.color === groupColor);
+    }
+    
+    return false;
+  }
+
 /** Returns { ok: boolean, groups: [...] } */
 export function validatePhase(phaseIndex, cardArray) {
   if (phaseIndex < 0 || phaseIndex >= PHASES.length) {

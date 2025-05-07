@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import PhaseDisplay from './PhaseDisplay.jsx';
 import { cardImageUrl } from '../utils/cardImages.js';
+import Scoreboard from './Scoreboard';
 
 export default function GameBoard({
   hands,
@@ -68,8 +69,8 @@ export default function GameBoard({
         room={room}
         selectedIndices={selectedIndices}
         hasDrawn={hasDrawn}
+        handOrder={handOrder}
       />
-
       <p>
         Current turn:{' '}
         {players.find(p => p.socketId === currentTurn)?.username || 'Unknown'}
@@ -175,29 +176,33 @@ export default function GameBoard({
         <button
           disabled={!isMyTurn || !hasDrawn || selectedIndices.length === 0}
           onClick={() => {
-            socket.emit('layPhase', {
-              room,
-              phaseIndex,
-              cardIndices: selectedIndices,
+            // grab the real card objects out of your reordered handOrder
+            const cardsToLay = selectedIndices.map(i => handOrder[i]);
+           socket.emit('layPhase', {
+             room,
+             phaseIndex,
+             cards: cardsToLay,
             });
-            setSelectedIndices([]);
+           setSelectedIndices([]);
           }}
         >
           Lay Phase (Phase {phaseIndex + 1})
         </button>
 
         <button
-          disabled={!isMyTurn || !hasDrawn || selectedIndices.length !== 1}
-          onClick={() => {
+        disabled={!isMyTurn || !hasDrawn || selectedIndices.length !== 1}
+        onClick={() => {
+            // pull the card object from your reordered handOrder
+            const cardToDiscard = handOrder[selectedIndices[0]];
             socket.emit('discardCard', {
-              room,
-              cardIndex: selectedIndices[0]
+            room,
+            card: cardToDiscard,
             });
             setSelectedIndices([]);
-          }}
-          style={{ marginLeft: 8 }}
+        }}
+        style={{ marginLeft: 8 }}
         >
-          Discard Card
+        Discard Card
         </button>
       </div>
 
@@ -212,6 +217,9 @@ export default function GameBoard({
             </li>
           ))}
       </ul>
+
+        {/* ─── SCOREBOARD ─── */}
+        <Scoreboard players={players} localId={localId} />
     </div>
   );
 }

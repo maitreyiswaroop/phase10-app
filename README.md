@@ -13,6 +13,7 @@ npm start
 dcd phase10-app/frontend
 npm install
 npm run dev
+CTRL C to cancel, not Z - will have to kill process if Z
 
 ## TODOs:
 - Fix game logic - eg. once phase complete, enable hitting either of the players' existing phases

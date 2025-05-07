@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import Lobby from './components/Lobby';
 import GameBoard from './components/GameBoard.jsx';
+import Scoreboard from './components/Scoreboard.jsx';
 
 // Use WebSocket-only transport and auto‐reconnect
 const socket = io('http://localhost:3001', {
@@ -20,6 +21,7 @@ export default function App() {
   const [roomInfo,  setRoomInfo]  = useState(null);
   const [gameState, setGameState] = useState(null);
   const [phaseIndex, setPhaseIndex] = useState(0);
+  const [roundOver, setRoundOver] = useState(null);
 
   useEffect(() => {
     // Fired on initial connect
@@ -44,14 +46,27 @@ export default function App() {
       setGameState(payload);
     });
 
+    socket.on('roundEnd', ({ winner, scores }) => {
+      console.log('🏆 Round over, winner:', winner, scores);
+      setRoundOver({ winner, scores });
+    });
+    
     // Cleanup listeners on unmount
     return () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('joinedRoom');
       socket.off('gameState');
+      socket.off('roundEnd');
     };
   }, []); // <- run once
+
+  // Get username of the winner
+  const getWinnerUsername = (winnerId) => {
+    if (!gameState) return 'Unknown';
+    const winner = gameState.players.find(p => p.socketId === winnerId);
+    return winner ? winner.username : 'Unknown';
+  };
 
   // 1) While connecting
   if (status.startsWith('Connecting')) {
@@ -68,7 +83,61 @@ export default function App() {
     return <Lobby socket={socket} />;
   }
 
-  // 3) GameBoard view
+  // 3) Round over view
+  if (roundOver) {
+    return (
+      <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
+        <h1>Round {roundOver.roundNumber} Complete!</h1>
+        <p>Winner: {getWinnerUsername(roundOver.winner)}</p>
+        
+        <h2>Round Results</h2>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f2f2f2' }}>
+              <th style={{ padding: 8, border: '1px solid #ddd' }}>Player</th>
+              <th style={{ padding: 8, border: '1px solid #ddd' }}>Cards Left</th>
+              <th style={{ padding: 8, border: '1px solid #ddd' }}>Points Added</th>
+              <th style={{ padding: 8, border: '1px solid #ddd' }}>Total Score</th>
+              <th style={{ padding: 8, border: '1px solid #ddd' }}>Next Phase</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roundOver.scores.map(s => (
+              <tr key={s.socketId} style={{
+                backgroundColor: s.socketId === roundOver.winner ? '#d4edda' : 'transparent'
+              }}>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.player}</td>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.handSize}</td>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.roundPoints}</td>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.totalScore}</td>
+                <td style={{ padding: 8, border: '1px solid #ddd' }}>Phase {s.currentPhase + 1}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        
+        <button 
+          onClick={() => {
+            socket.emit('startNextRound', { room: roomInfo.room });
+            setRoundOver(null);
+          }}
+          style={{ 
+            padding: '10px 16px', 
+            fontSize: '16px', 
+            backgroundColor: '#28a745', 
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Start Round {(roundOver.roundNumber || 0) + 1}
+        </button>
+      </div>
+    );
+  }
+
+  // 4) GameBoard view
   if (gameState) {
     return (
       <GameBoard
@@ -87,7 +156,7 @@ export default function App() {
     );
   }
 
-  // 4) Waiting-to-start room view
+  // 5) Waiting-to-start room view
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
       <h1>Room: {roomInfo.room}</h1>

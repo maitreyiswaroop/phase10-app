@@ -23,7 +23,8 @@ export default function PhaseDisplay({
   socket,
   room,
   selectedIndices,
-  hasDrawn
+  hasDrawn,
+  handOrder,
 }) {
   // Safely pull the description for this phase
   const description = PHASE_DESCRIPTIONS[phaseIndex] || '';
@@ -58,19 +59,21 @@ export default function PhaseDisplay({
                     {/* “Hit” button */}
                     <button
                       disabled={
-                        // you can’t hit yourself, must have drawn, and exactly one selected
-                        p.socketId === localId ||
+                        // must have drawn, and exactly one selected
                         !hasDrawn ||
-                        selectedIndices.length !== 1
+                        selectedIndices.length !== 1 ||
+                        groups.length === 0
                       }
-                      onClick={() =>
+                      onClick={() =>{
+                        const cardToHit = handOrder[selectedIndices[0]];
                         socket.emit('hitPhase', {
                           room,
                           phaseIndex,
                           targetId: p.socketId,
                           groupIndex: gi,
-                          cardIndex: selectedIndices[0],
-                        })
+                          card: cardToHit
+                        });
+                      }
                       }
                       style={{ marginLeft: 4 }}
                     >
