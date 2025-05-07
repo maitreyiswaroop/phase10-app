@@ -17,4 +17,6 @@ npm run dev
 ## TODOs:
 - Fix game logic - eg. once phase complete, enable hitting either of the players' existing phases
 - only allow valid hits
+- round end when one player's hand is empty
+- how to proceed after round end
 - UI style considerations
