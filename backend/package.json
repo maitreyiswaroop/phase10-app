@@ -1,0 +1,15 @@
+{
+    "name": "phase10-backend",
+    "type": "module",
+    "version": "1.0.0",
+    "description": "Backend server for Phase 10 Online",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "socket.io": "^4.6.1"
+    }
+}
