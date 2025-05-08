@@ -13,6 +13,7 @@ import Scoreboard from './components/Scoreboard.jsx';
 //   pingInterval: 20000,
 //   pingTimeout: 60000,
 // });
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const socket = io(
     import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001',
     {
