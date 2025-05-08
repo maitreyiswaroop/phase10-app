@@ -16,8 +16,8 @@ npm run dev
 CTRL C to cancel, not Z - will have to kill process if Z
 
 ## TODOs:
-- Fix game logic - eg. once phase complete, enable hitting either of the players' existing phases
-- only allow valid hits
-- round end when one player's hand is empty
-- how to proceed after round end
+- Allow persistence - if I refresh the page, it should not take me to homescreen again; 
+- same player id joining same game should be able to pick up where they left off
+- joining via link?
 - UI style considerations
+- Fix the use of Wilds in a rn- eg if I have 2 W W W, should be able to add a 3 in a hit and so on 
