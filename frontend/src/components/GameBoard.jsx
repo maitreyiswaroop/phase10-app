@@ -27,6 +27,7 @@ export default function GameBoard({
   const isMyTurn = localId === currentTurn;
   const myHand = hands[localId] || [];
   const topDiscard = discardPile[0] || null;
+  const hasCompletedCurrentPhase = !!laid[currentPhaseIndex]?.[localId];
 
   // Whenever the server deals or updates your hand, reset local order
   useEffect(() => {
@@ -73,6 +74,8 @@ export default function GameBoard({
         hasDrawn={hasDrawn}
         handOrder={handOrder}
         setSelectedIndices={setSelectedIndices}
+        hasCompletedCurrentPhase={hasCompletedCurrentPhase}
+        isMyTurn={isMyTurn}
       />
       <p>
         Current turn:{' '}

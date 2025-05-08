@@ -25,9 +25,12 @@ export default function PhaseDisplay({
   selectedIndices,
   hasDrawn,
   handOrder,
-}) {
+  setSelectedIndices,
+  hasCompletedCurrentPhase,
+  isMyTurn
+}) { 
   // Get the current player's phase description
-  const isMyTurn = localId === players.find(p => p.socketId === localId)?.socketId;
+//   const isMyTurn = localId === players.find(p => p.socketId === localId)?.socketId;
   const description = PHASE_DESCRIPTIONS[phaseIndex] || '';
 
   return (
@@ -44,54 +47,55 @@ export default function PhaseDisplay({
           const groups = 
             (laid[playerPhaseIndex] && laid[playerPhaseIndex][p.socketId]) || [];
 
-          return (
-            <li key={p.socketId} style={{ marginBottom: 8 }}>
-              <strong>{p.username}:</strong> (Phase {playerPhaseIndex + 1}):{' '}
-              {groups.length ? (
-                groups.map((grp, gi) => (
-                  <span key={gi} style={{ marginRight: 8 }}>
-                    [{' '}
-                    {grp.map((c, ci) => (
-                      <img
-                        key={ci}
-                        src={cardImageUrl(c)}
-                        alt=""
-                        style={{ width: 30, margin: '0 2px' }}
-                      />
-                    ))}{' '}
-                    ]
-                    {/* "Hit" button */}
-                    <button
-                      disabled={
-                        !hasDrawn ||
-                        selectedIndices.length !== 1 ||
-                        groups.length === 0 ||
-                        !isMyTurn  // Add this condition to disable hitting when not your turn
-                      }
-                      onClick={() => {
-                        const cardToHit = handOrder[selectedIndices[0]];
-                        socket.emit('hitPhase', {
-                          room,
-                          phaseIndex: playerPhaseIndex,  // Use this player's phase index
-                          targetId: p.socketId,
-                          groupIndex: gi,
-                          card: cardToHit
-                        });
-                        setSelectedIndices([]);
-                      }}
-                      style={{ marginLeft: 4 }}
-                    >
-                      +
-                    </button>
-                  </span>
-                ))
-              ) : (
-                <em>not laid yet</em>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
+            return (
+                <li key={p.socketId} style={{ marginBottom: 8 }}>
+                  <strong>{p.username}:</strong> (Phase {playerPhaseIndex + 1}):{' '}
+                  {groups.length ? (
+                    groups.map((grp, gi) => (
+                      <span key={gi} style={{ marginRight: 8 }}>
+                        [{' '}
+                        {grp.map((c, ci) => (
+                          <img
+                            key={ci}
+                            src={cardImageUrl(c)}
+                            alt=""
+                            style={{ width: 30, margin: '0 2px' }}
+                          />
+                        ))}{' '}
+                        ]
+                        {/* "Hit" button with updated disabled logic */}
+                        <button
+                          disabled={
+                            !hasDrawn ||
+                            selectedIndices.length !== 1 ||
+                            groups.length === 0 ||
+                            !isMyTurn ||
+                            !hasCompletedCurrentPhase // Disable if player hasn't completed their phase
+                          }
+                          onClick={() => {
+                            const cardToHit = handOrder[selectedIndices[0]];
+                            socket.emit('hitPhase', {
+                              room,
+                              phaseIndex: playerPhaseIndex,
+                              targetId: p.socketId,
+                              groupIndex: gi,
+                              card: cardToHit
+                            });
+                            setSelectedIndices([]);
+                          }}
+                          style={{ marginLeft: 4 }}
+                        >
+                          +
+                        </button>
+                      </span>
+                    ))
+                  ) : (
+                    <em>not laid yet</em>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      );
+    }
