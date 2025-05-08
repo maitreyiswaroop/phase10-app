@@ -5,14 +5,26 @@ import Lobby from './components/Lobby';
 import GameBoard from './components/GameBoard.jsx';
 import Scoreboard from './components/Scoreboard.jsx';
 
-// Use WebSocket-only transport and auto‐reconnect
-const socket = io('http://localhost:3001', {
-  transports: ['websocket'],
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  pingInterval: 20000,
-  pingTimeout: 60000,
-});
+// // Use WebSocket-only transport and auto‐reconnect
+// const socket = io('http://localhost:3001', {
+//   transports: ['websocket'],
+//   reconnection: true,
+//   reconnectionAttempts: Infinity,
+//   pingInterval: 20000,
+//   pingTimeout: 60000,
+// });
+const socket = io(
+    process.env.NODE_ENV === 'production' 
+      ? 'https://phase10-backend.onrender.com'
+      : 'http://localhost:3001',
+    {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      pingInterval: 20000,
+      pingTimeout: 60000,
+    }
+  );
 
 export default function App() {
   const [localId,   setLocalId]   = useState('');
