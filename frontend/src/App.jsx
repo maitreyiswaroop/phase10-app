@@ -14,9 +14,7 @@ import Scoreboard from './components/Scoreboard.jsx';
 //   pingTimeout: 60000,
 // });
 const socket = io(
-    process.env.NODE_ENV === 'production' 
-      ? 'https://phase10-backend.onrender.com'
-      : 'http://localhost:3001',
+    import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001',
     {
       transports: ['websocket'],
       reconnection: true,
