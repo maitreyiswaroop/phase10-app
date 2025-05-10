@@ -45,16 +45,15 @@ export default function App() {
       setStatus('❌ Disconnected');
     });
 
-    useEffect(() => {
-      // auto‐rejoin if session stored and not yet connected
-      const sess = JSON.parse(localStorage.getItem('session') || '{}');
-      if (sess.room && sess.username) {
-        socket.emit('rejoinRoom', {
-          room: sess.room,
-          username: sess.username,
-          accessKey: sess.accessKey
-        });
-      }
+
+    const sess = JSON.parse(localStorage.getItem('session') || '{}');
+    if (sess.room && sess.username) {
+      socket.emit('rejoinRoom', {
+        room: sess.room,
+        username: sess.username,
+        accessKey: sess.accessKey
+      });
+    }
     // Lobby events
     socket.on('joinedRoom', ({ room, players }) => {
       setRoomInfo({ room, players });
@@ -90,13 +89,13 @@ export default function App() {
     return winner ? winner.username : 'Unknown';
   };
 
-    // clear on leave
-    const leave = () => {
-      localStorage.removeItem('session');
-      setJoined(false);
-      setGameState(null);
-      setRoundOver(null);
-    };
+  // clear on leave
+  const leave = () => {
+    localStorage.removeItem('session');
+    setJoined(false);
+    setGameState(null);
+    setRoundOver(null);
+  };
 
   // 1) While connecting
   if (status.startsWith('Connecting')) {
