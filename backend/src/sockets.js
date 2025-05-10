@@ -140,6 +140,7 @@ import {
         // round end?
         const isRoundOver = r.hands[socket.id].length === 0;
         if (isRoundOver) {
+          r.isRoundOver = true;
           // Calculate points for remaining cards
           const roundScores = {};
           r.players.forEach(p => {
@@ -288,10 +289,11 @@ import {
 // Add this socket handler or update your existing one
     socket.on('startNextRound', ({ room }) => {
         const r = rooms[room];
-        if (!r) return;
+        if (!r || !r.isRoundOver) return;
         
+        r.isRoundOver = false;
         // Increment round number
-        r.roundNumber = (r.roundNumber || 0) + 1;
+        r.roundNumber++;
         
         // Track which players completed their phase
         const completedPhases = {};

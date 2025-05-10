@@ -55,6 +55,7 @@ export default function App() {
     socket.on('gameState', (payload) => {
       console.log('📥 Client received gameState:', payload);
       setGameState(payload);
+      setRoundOver(null);
     });
 
     socket.on('roundEnd', ({ winner, scores, roundNumber }) => {
