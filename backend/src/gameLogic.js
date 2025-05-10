@@ -328,17 +328,18 @@ export function validateHit(phaseIndex, existingGroup, newCard) {
     
     // For runs (sequential values)
     if (existingGroup.some(c => c.type === 'number')) {
-      // Find min and max values in the run
-      const values = existingGroup
-        .filter(c => c.type === 'number')
-        .map(c => c.value);
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      
-      // New card must be wild or continue the run
-      return newCard.type === 'wild' || 
-             (newCard.type === 'number' && 
-              (newCard.value === min - 1 || newCard.value === max + 1));
+      // allow any hit that lets the cards permute into a valid run
+      const newGroup = [...existingGroup, newCard];
+      const { ok } = validateRuns(newGroup, [newGroup.length]);
+      return ok;
+    }
+    // === END REPLACEMENT ===
+  
+    // For color‐group (Phase 8)…
+    if (phaseIndex === 7) {
+      const groupColor = existingGroup.find(c => c.type === 'number')?.color;
+      return newCard.type === 'wild' ||
+             (newCard.type === 'number' && newCard.color === groupColor);
     }
     
     // For color groups

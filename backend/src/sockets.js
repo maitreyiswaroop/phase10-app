@@ -152,7 +152,7 @@ import {
               // Calculate points based on cards left in hand
               hand.forEach(card => {
                 if (card.type === 'number') {
-                  points += card.value;
+                  points += card.value < 10 ? 5 : 10;
                 } else if (card.type === 'wild') {
                   points += 25;
                 } else if (card.type === 'skip') {
