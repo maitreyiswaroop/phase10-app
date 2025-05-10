@@ -49,14 +49,20 @@ export default function Lobby({ socket }) {
           onChange={e => setIsPrivate(e.target.checked)}
         /> Private room
       </label>
-      {isPrivate && (
+      {/* {isPrivate && ( */}
         <input
           placeholder="Access Key"
           value={accessKey}
           onChange={e => setAccessKey(e.target.value.toUpperCase())}
           maxLength={5}
+          disabled={!isPrivate}
+          style={{
+            marginTop: 8,
+            opacity: isPrivate ? 1 : 0.5,
+            cursor: isPrivate ? 'text' : 'not-allowed'
+          }}
         />
-      )}
+      {/* )} */}
       <div style={{ marginTop: 12 }}>
         <button onClick={handleCreate}>Create Room</button>
         <button onClick={handleJoin} style={{ marginLeft: 8 }}>Join Room</button>
