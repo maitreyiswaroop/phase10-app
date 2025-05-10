@@ -14,9 +14,13 @@ import {
       console.log('🔌 Client connected:', socket.id);
   
       // Create Room
-      socket.on('createRoom', ({ username, room }) => {
+      socket.on('createRoom', ({ username, room, isPrivate, accessKey }) => {
+        const expiresAt = Date.now() + 1000 * 60 * 15; // 15 min to rejoin
         rooms[room] = {
           players:    [{ socketId: socket.id, username, phaseIndex: 0, score: 0 }],
+          isPrivate:  !!isPrivate,
+          accessKey:  accessKey || '',
+          expiresAt,
           deck:       [],
           hands:      {},
           discard:    [],
@@ -33,12 +37,24 @@ import {
       });
   
       // Join Room
-      socket.on('joinRoom', ({ username, room }) => {
+      socket.on('joinRoom', ({ username, room, accessKey }) => {
         const r = rooms[room];
         if (!r) {
           socket.emit('error', `Room "${room}" does not exist`);
           return;
         }
+        // enforce private key
+        if (r.isPrivate && r.accessKey !== accessKey) {
+          socket.emit('error', 'Invalid access key');
+          return;
+        }
+        // enforce not expired
+        if (r.expiresAt && Date.now() > r.expiresAt) {
+          delete rooms[room];
+          socket.emit('error', 'Room expired');
+          return;
+        }
+        // normal join
         r.players.push({ socketId: socket.id, username, phaseIndex: 0, score: 0 });
         socket.join(room);
         io.to(room).emit('joinedRoom', {
@@ -47,6 +63,26 @@ import {
         });
       });
   
+      // Rejoin Room on refresh
+      socket.on('rejoinRoom', ({ room, username, accessKey }) => {
+        const r = rooms[room];
+        if (!r) return socket.emit('error', 'Room not found');
+        if (r.isPrivate && r.accessKey !== accessKey) {
+          return socket.emit('error', 'Invalid access key');
+        }
+        if (r.expiresAt && Date.now() > r.expiresAt) {
+          delete rooms[room];
+          return socket.emit('error', 'Room expired');
+        }
+        // find the old player entry by username
+        const p = r.players.find(p => p.username === username);
+        if (!p) return socket.emit('error', 'Player not in room');
+        p.socketId = socket.id;         // update socket.id
+        toast && clearTimeout(toast);   // if you have any pending timeout...
+        socket.join(room);
+        io.to(room).emit('joinedRoom', { room, players: r.players });
+        emitState(room, r, io);
+      });
       // Start Game: shuffle, deal, set first turn
       socket.on('startGame', ({ room }) => {
         console.log('📥 startGame →', room);
