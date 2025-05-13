@@ -23,15 +23,50 @@ export default function GameBoard({
   const [selectedIndices, setSelectedIndices] = useState([]);
   
   const isMyTurn = localId === currentTurn;
-  const myHand = hands[localId] || [];
   const topDiscard = discardPile[0] || null;
   const hasCompletedCurrentPhase = !!laid[currentPhaseIndex]?.[localId];
 
-  // Whenever the server deals or updates your hand, reset local order
+  // Whenever the server deals or updates your hand, reconcile local order
   useEffect(() => {
-    setHandOrder(hands[localId] || []);
+    const serverHand = hands[localId] || [];
+
+    if (serverHand.length === 0) {
+      setHandOrder([]);
+      setSelectedIndices([]); // Clear selection when hand is empty
+      return;
+    }
+
+    // Fallback: If local handOrder is empty, or if cards don't have IDs yet (e.g., during a migration or error),
+    // or if server hand is empty (already handled), directly use the server's hand.
+    // This assumes card objects from the server will have a unique 'id' property.
+    if (handOrder.length === 0 || !handOrder[0]?.id || !serverHand[0]?.id) {
+      setHandOrder(serverHand);
+    } else {
+      // Reconcile: Preserve existing order as much as possible
+      const serverHandCardsMap = new Map(serverHand.map(card => [card.id, card]));
+      const newHandOrder = [];
+
+      // 1. Add cards that are still in the server's hand, maintaining their previous order from handOrder
+      for (const localCard of handOrder) {
+        if (serverHandCardsMap.has(localCard.id)) {
+          newHandOrder.push(serverHandCardsMap.get(localCard.id)); // Use the card object from serverHand to get latest state
+          serverHandCardsMap.delete(localCard.id); // Mark as processed
+        }
+      }
+
+      // 2. Add any new cards from the server hand (cards that were in serverHandCardsMap but not in local handOrder)
+      // These are typically newly drawn cards. Add them to the end.
+      // Alternatively, you could try to find a "logical" place, but end is simplest.
+      serverHandCardsMap.forEach(newCardFromServer => {
+        newHandOrder.push(newCardFromServer);
+      });
+      
+      setHandOrder(newHandOrder);
+    }
+    // It's generally safer to reset selections when the hand fundamentally changes.
+    // If you need to preserve selection based on card ID, this logic would also need an update.
     setSelectedIndices([]);
-  }, [hands, localId]);
+  }, [hands, localId]); // handOrder is NOT a dependency here to prevent re-render loops.
 
   // Clear any leftover selection once you've successfully laid
   useEffect(() => {
@@ -51,10 +86,12 @@ export default function GameBoard({
     ) {
       return;
     }
+    // Create a new array for the reordered hand
     const newOrder = Array.from(handOrder);
-    const [moved] = newOrder.splice(source.index, 1);
-    newOrder.splice(destination.index, 0, moved);
+    const [movedCard] = newOrder.splice(source.index, 1);
+    newOrder.splice(destination.index, 0, movedCard);
     setHandOrder(newOrder);
+    // Note: If selectedIndices tracked IDs, this would need to update based on IDs, not indices.
   }
 
   return (
@@ -146,8 +183,8 @@ export default function GameBoard({
                   const isSelected = selectedIndices.includes(idx);
                   return (
                     <Draggable
-                      key={`card-${idx}`}
-                      draggableId={`card-${idx}`}
+                      key={card.id || `card-${idx}`}
+                      draggableId={(card.id && String(card.id)) || `card-${idx}`}
                       index={idx}
                     >
                       {(prov) => (
@@ -158,7 +195,7 @@ export default function GameBoard({
                           src={cardImageUrl(card)}
                           alt={card.type === 'number' 
                             ? `${card.color} ${card.value}` 
-                            : card.type.toUpperCase()}
+                            : card.type ? card.type.toUpperCase() : 'UNKNOWN_CARD'}
                           onClick={() => {
                             if (!isMyTurn || !hasDrawn) return;
                             setSelectedIndices((sel) =>

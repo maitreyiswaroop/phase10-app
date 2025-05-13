@@ -14,19 +14,20 @@ const SKIP_COUNT = 4;
  */
 export function createDeck() {
   const deck = [];
+  let cardIdCounter = 0; // Initialize a counter for unique IDs
   for (const color of COLORS) {
     for (const num of NUMBERS) {
-      deck.push({ type: 'number', color, value: num });
-      deck.push({ type: 'number', color, value: num });
+      deck.push({ id: cardIdCounter++, type: 'number', color, value: num });
+      deck.push({ id: cardIdCounter++, type: 'number', color, value: num });
     }
   }
   // wilds
   for (let i = 0; i < WILD_COUNT; i++) {
-    deck.push({ type: 'wild' });
+    deck.push({ id: cardIdCounter++, type: 'wild' });
   }
   // skips
   for (let i = 0; i < SKIP_COUNT; i++) {
-    deck.push({ type: 'skip' });
+    deck.push({ id: cardIdCounter++, type: 'skip' });
   }
   return deck;
 }
