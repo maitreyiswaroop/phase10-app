@@ -29,9 +29,36 @@ export default function GameBoard({
   const topDiscard = discardPile[0] || null;
   const hasCompletedCurrentPhase = !!laid[currentPhaseIndex]?.[localId];
 
-  // Whenever the server deals or updates your hand, reset local order
+  // Update hand order while preserving existing order
   useEffect(() => {
-    setHandOrder(hands[localId] || []);
+    if (!hands[localId]) return;
+    
+    // If this is the first time we're getting cards, set the initial order
+    if (handOrder.length === 0) {
+      setHandOrder(hands[localId]);
+      return;
+    }
+
+    // Find new cards that aren't in our current handOrder
+    const newCards = hands[localId].filter(newCard => 
+      !handOrder.some(existingCard => 
+        existingCard.type === newCard.type && 
+        existingCard.value === newCard.value && 
+        existingCard.color === newCard.color
+      )
+    );
+
+    // Remove cards that are no longer in the hand
+    const updatedOrder = handOrder.filter(card => 
+      hands[localId].some(newCard => 
+        newCard.type === card.type && 
+        newCard.value === card.value && 
+        newCard.color === card.color
+      )
+    );
+
+    // Add new cards to the end
+    setHandOrder([...updatedOrder, ...newCards]);
     setSelectedIndices([]);
   }, [hands, localId]);
 
