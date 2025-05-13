@@ -285,6 +285,75 @@ import {
   
         r.laid[phaseIndex] = r.laid[phaseIndex] || {};
         r.laid[phaseIndex][socket.id] = groups;
+
+        // Check if hand is empty after laying down cards
+        if (hand.length === 0) {
+          r.isRoundOver = true;
+          // Calculate points for remaining cards
+          const roundScores = {};
+          r.players.forEach(p => {
+            const hand = r.hands[p.socketId];
+            let points = 0;
+            
+            // Skip the winner - they get 0 points this round
+            if (p.socketId !== socket.id) {
+              // Calculate points based on cards left in hand
+              hand.forEach(card => {
+                if (card.type === 'number') {
+                  points += card.value < 10 ? 5 : 10;
+                } else if (card.type === 'wild') {
+                  points += 25;
+                } else if (card.type === 'skip') {
+                  points += 15;
+                }
+              });
+              
+              // Update their total score
+              const playerIndex = r.players.findIndex(pl => pl.socketId === p.socketId);
+              r.players[playerIndex].score += points;
+            }
+            
+            roundScores[p.socketId] = points;
+          });
+          
+          // compute player data to send to clients
+          const completedPhases = {};
+          for (const phaseIndex in r.laid) {
+            for (const socketId in r.laid[phaseIndex]) {
+              completedPhases[socketId] = parseInt(phaseIndex, 10);
+            }
+          }
+
+          const scores = r.players.map(p => {
+            const currentPhase = typeof p.phaseIndex === 'number' ? p.phaseIndex : 0;
+            const willAdvance = completedPhases[p.socketId] !== undefined;
+            let nextPhase;
+            if (willAdvance) {
+              nextPhase = (currentPhase + 1) % PHASES.length;
+            } else {
+              nextPhase = currentPhase;
+            }
+
+            return {
+              socketId: p.socketId,
+              player: p.username,
+              handSize: r.hands[p.socketId].length,
+              roundPoints: roundScores[p.socketId] || 0,
+              totalScore: p.score,
+              currentPhase: currentPhase,
+              nextPhase: nextPhase,
+              willAdvance: willAdvance
+            };
+          });
+          
+          // broadcast roundEnd
+          io.to(room).emit('roundEnd', { 
+            winner: socket.id, 
+            scores,
+            roundNumber: r.roundNumber
+          });
+          return; // skip normal emitState so no further moves are allowed
+        }
   
         emitState(room, r, io);
         console.log('📤 gameState (layPhase) →', room, phaseIndex, socket.id);
