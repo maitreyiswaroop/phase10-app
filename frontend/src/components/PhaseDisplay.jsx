@@ -34,68 +34,101 @@ export default function PhaseDisplay({
   const description = PHASE_DESCRIPTIONS[phaseIndex] || '';
 
   return (
-    <div style={{ marginBottom: 20, padding: 10, border: '1px solid #ccc' }}>
+    <div>
       <h2>
         Phase {phaseIndex + 1}: {description}
       </h2>
-      <ul>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: 'var(--spacing-md)'
+      }}>
         {players.map((p) => {
-          // Get this player's phase index and description
           const playerPhaseIndex = p.phaseIndex || 0;
-          
-          // Get the groups this player has laid for their current phase
-          const groups = 
-            (laid[playerPhaseIndex] && laid[playerPhaseIndex][p.socketId]) || [];
+          const groups = (laid[playerPhaseIndex] && laid[playerPhaseIndex][p.socketId]) || [];
+          const isCurrentPlayer = p.socketId === localId;
 
-            return (
-                <li key={p.socketId} style={{ marginBottom: 8 }}>
-                  <strong>{p.username}:</strong> (Phase {playerPhaseIndex + 1}):{' '}
-                  {groups.length ? (
-                    groups.map((grp, gi) => (
-                      <span key={gi} style={{ marginRight: 8 }}>
-                        [{' '}
-                        {grp.map((c, ci) => (
-                          <img
-                            key={ci}
-                            src={cardImageUrl(c)}
-                            alt=""
-                            style={{ width: 30, margin: '0 2px' }}
-                          />
-                        ))}{' '}
-                        ]
-                        {/* "Hit" button with updated disabled logic */}
-                        <button
-                          disabled={
-                            !hasDrawn ||
-                            selectedIndices.length !== 1 ||
-                            groups.length === 0 ||
-                            !isMyTurn ||
-                            !hasCompletedCurrentPhase // Disable if player hasn't completed their phase
-                          }
-                          onClick={() => {
-                            const cardToHit = handOrder[selectedIndices[0]];
-                            socket.emit('hitPhase', {
-                              room,
-                              phaseIndex: playerPhaseIndex,
-                              targetId: p.socketId,
-                              groupIndex: gi,
-                              card: cardToHit
-                            });
-                            setSelectedIndices([]);
-                          }}
-                          style={{ marginLeft: 4 }}
-                        >
-                          +
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <em>not laid yet</em>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      );
-    }
+          return (
+            <div 
+              key={p.socketId} 
+              style={{
+                padding: 'var(--spacing-md)',
+                backgroundColor: 'var(--color-background)',
+                borderRadius: 'var(--radius-sm)',
+                border: isCurrentPlayer ? '2px solid var(--color-primary)' : 'none'
+              }}
+            >
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 'var(--spacing-sm)'
+              }}>
+                <strong>{p.username}</strong>
+                <span>Phase {playerPhaseIndex + 1}</span>
+              </div>
+
+              {groups.length ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
+                  {groups.map((grp, gi) => (
+                    <div 
+                      key={gi}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--spacing-xs)',
+                        padding: 'var(--spacing-sm)',
+                        backgroundColor: 'var(--color-surface)',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--color-border)'
+                      }}
+                    >
+                      {grp.map((c, ci) => (
+                        <img
+                          key={ci}
+                          src={cardImageUrl(c)}
+                          alt=""
+                          style={{ width: 30, margin: '0 2px' }}
+                        />
+                      ))}
+                      <button
+                        disabled={
+                          !hasDrawn ||
+                          selectedIndices.length !== 1 ||
+                          groups.length === 0 ||
+                          !isMyTurn ||
+                          !hasCompletedCurrentPhase
+                        }
+                        onClick={() => {
+                          const cardToHit = handOrder[selectedIndices[0]];
+                          socket.emit('hitPhase', {
+                            room,
+                            phaseIndex: playerPhaseIndex,
+                            targetId: p.socketId,
+                            groupIndex: gi,
+                            card: cardToHit
+                          });
+                          setSelectedIndices([]);
+                        }}
+                        style={{
+                          padding: 'var(--spacing-xs) var(--spacing-sm)',
+                          fontSize: '1.2rem',
+                          lineHeight: 1,
+                          minWidth: '32px'
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <em>not laid yet</em>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

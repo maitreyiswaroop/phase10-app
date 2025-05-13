@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Lobby from './components/Lobby';
 import GameBoard from './components/GameBoard.jsx';
 import Scoreboard from './components/Scoreboard.jsx';
+import './styles/global.css';
 
 // // Use WebSocket-only transport and auto‐reconnect
 // const socket = io('http://localhost:3001', {
@@ -100,9 +101,9 @@ export default function App() {
   // 1) While connecting
   if (status.startsWith('Connecting')) {
     return (
-      <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-        <h1>Phase 10 Online</h1>
-        <p>{status}</p>
+      <div className="card" style={{ maxWidth: '600px', margin: '2rem auto' }}>
+        <h1 className="text-center">Phase 10 Online</h1>
+        <p className="text-center">{status}</p>
       </div>
     );
   }
@@ -115,41 +116,40 @@ export default function App() {
   // 3) Round over view
   if (roundOver) {
     return (
-      <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-        <h1>Round {roundOver.roundNumber} Complete!</h1>
-        <p>Winner: {getWinnerUsername(roundOver.winner)}</p>
+      <div className="card" style={{ maxWidth: '800px', margin: '2rem auto' }}>
+        <h1 className="text-center">Round {roundOver.roundNumber} Complete!</h1>
+        <p className="text-center">Winner: {getWinnerUsername(roundOver.winner)}</p>
         
         <h2>Round Results</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-        <thead>
-            <tr style={{ backgroundColor: '#f2f2f2' }}>
-            <th style={{ padding: 8, border: '1px solid #ddd' }}>Player</th>
-            <th style={{ padding: 8, border: '1px solid #ddd' }}>Cards Left</th>
-            <th style={{ padding: 8, border: '1px solid #ddd' }}>Points Added</th>
-            <th style={{ padding: 8, border: '1px solid #ddd' }}>Total Score</th>
-            <th style={{ padding: 8, border: '1px solid #ddd' }}>Current Phase</th>
-            <th style={{ padding: 8, border: '1px solid #ddd' }}>Next Round</th>
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Cards Left</th>
+              <th>Points Added</th>
+              <th>Total Score</th>
+              <th>Current Phase</th>
+              <th>Next Round</th>
             </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
             {roundOver.scores.map(s => (
-            <tr key={s.socketId} style={{
-                backgroundColor: s.socketId === roundOver.winner ? '#d4edda' : 'transparent'
-            }}>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.player}</td>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.handSize}</td>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.roundPoints}</td>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>{s.totalScore}</td>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>
-                Phase {s.currentPhase + 1}
-                {s.willAdvance && <span style={{color: 'green'}}> ✓</span>}
+              <tr key={s.socketId} style={{
+                backgroundColor: s.socketId === roundOver.winner ? 'var(--color-success)' : 'transparent',
+                color: s.socketId === roundOver.winner ? 'white' : 'inherit'
+              }}>
+                <td>{s.player}</td>
+                <td>{s.handSize}</td>
+                <td>{s.roundPoints}</td>
+                <td>{s.totalScore}</td>
+                <td>
+                  Phase {s.currentPhase + 1}
+                  {s.willAdvance && <span style={{color: 'var(--color-success)'}}> ✓</span>}
                 </td>
-                <td style={{ padding: 8, border: '1px solid #ddd' }}>
-                Phase {s.nextPhase + 1}
-                </td>
-            </tr>
+                <td>Phase {s.nextPhase + 1}</td>
+              </tr>
             ))}
-        </tbody>
+          </tbody>
         </table>
         
         <button 
@@ -158,13 +158,11 @@ export default function App() {
             setRoundOver(null);
           }}
           style={{ 
-            padding: '10px 16px', 
-            fontSize: '16px', 
-            backgroundColor: '#28a745', 
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
+            display: 'block',
+            margin: '0 auto',
+            padding: 'var(--spacing-md) var(--spacing-lg)',
+            fontSize: '1.1rem',
+            backgroundColor: 'var(--color-success)'
           }}
         >
           Start Round {roundOver.roundNumber + 1}
@@ -186,7 +184,6 @@ export default function App() {
         room={roomInfo.room}
         currentTurn={gameState.currentTurn}
         laid={gameState.laid}
-        // phaseIndex={phaseIndex}
         hasDrawn={gameState.hasDrawn}
       />
     );
@@ -194,14 +191,15 @@ export default function App() {
 
   // 5) Waiting-to-start room view
   return (
-    <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-      <h1>Room: {roomInfo.room}</h1>
-      <p>Players: {roomInfo.players.map(p => p.username).join(', ')}</p>
+    <div className="card" style={{ maxWidth: '600px', margin: '2rem auto' }}>
+      <h1 className="text-center">Room: {roomInfo.room}</h1>
+      <p className="text-center">Players: {roomInfo.players.map(p => p.username).join(', ')}</p>
       <button
         onClick={() => {
           console.log('📤 Emitting startGame for room', roomInfo.room);
           socket.emit('startGame', { room: roomInfo.room });
         }}
+        style={{ display: 'block', margin: '0 auto' }}
       >
         Start Game
       </button>

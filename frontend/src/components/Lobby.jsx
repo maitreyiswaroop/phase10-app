@@ -3,10 +3,10 @@ import { useState } from 'react';
 
 export default function Lobby({ socket }) {
   const [username, setUsername] = useState('');
-  const [room, setRoom]       = useState('');
+  const [room, setRoom] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [accessKey, setAccessKey] = useState('');
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
   const handleCreate = () => {
     if (!username || !room) {
@@ -14,10 +14,9 @@ export default function Lobby({ socket }) {
       return;
     }
     const key = isPrivate
-    ? accessKey || Math.random().toString(36).slice(-5).toUpperCase()
-    : '';
+      ? accessKey || Math.random().toString(36).slice(-5).toUpperCase()
+      : '';
     socket.emit('createRoom', { username, room, isPrivate, accessKey: key });
-    // store for rejoin
     localStorage.setItem('session', JSON.stringify({ room, username, accessKey: key }));
   };
 
@@ -31,41 +30,84 @@ export default function Lobby({ socket }) {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>🏠 Lobby</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <input
-        placeholder="Username" value={username}
-        onChange={e => { setError(''); setUsername(e.target.value); }}
-      />
-      <input
-        placeholder="Room name" value={room}
-        onChange={e => { setError(''); setRoom(e.target.value); }}
-      />
-      <label>
+    <div className="card" style={{ maxWidth: '400px', margin: '2rem auto' }}>
+      <h1 className="text-center">🏠 Lobby</h1>
+      
+      {error && (
+        <div style={{ 
+          backgroundColor: 'var(--color-danger)', 
+          color: 'white',
+          padding: 'var(--spacing-sm)',
+          borderRadius: 'var(--radius-sm)',
+          marginBottom: 'var(--spacing-md)'
+        }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ marginBottom: 'var(--spacing-md)' }}>
+        <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)' }}>
+          Username
+        </label>
         <input
-          type="checkbox"
-          checked={isPrivate}
-          onChange={e => setIsPrivate(e.target.checked)}
-        /> Private room
-      </label>
-      {/* {isPrivate && ( */}
+          placeholder="Enter your username"
+          value={username}
+          onChange={e => { setError(''); setUsername(e.target.value); }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 'var(--spacing-md)' }}>
+        <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)' }}>
+          Room Name
+        </label>
         <input
-          placeholder="Access Key"
+          placeholder="Enter room name"
+          value={room}
+          onChange={e => { setError(''); setRoom(e.target.value); }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 'var(--spacing-md)' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+          <input
+            type="checkbox"
+            checked={isPrivate}
+            onChange={e => setIsPrivate(e.target.checked)}
+          />
+          Private room
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+        <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)' }}>
+          Access Key
+        </label>
+        <input
+          placeholder="Enter access key"
           value={accessKey}
           onChange={e => setAccessKey(e.target.value.toUpperCase())}
           maxLength={5}
           disabled={!isPrivate}
           style={{
-            marginTop: 8,
             opacity: isPrivate ? 1 : 0.5,
             cursor: isPrivate ? 'text' : 'not-allowed'
           }}
         />
-      {/* )} */}
-      <div style={{ marginTop: 12 }}>
-        <button onClick={handleCreate}>Create Room</button>
-        <button onClick={handleJoin} style={{ marginLeft: 8 }}>Join Room</button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+        <button 
+          onClick={handleCreate}
+          style={{ flex: 1 }}
+        >
+          Create Room
+        </button>
+        <button 
+          onClick={handleJoin}
+          style={{ flex: 1 }}
+        >
+          Join Room
+        </button>
       </div>
     </div>
   );
