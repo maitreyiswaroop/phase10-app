@@ -84,12 +84,32 @@ export default function PhaseDisplay({
                       }}
                     >
                       {grp.map((c, ci) => (
-                        <img
-                          key={ci}
-                          src={cardImageUrl(c)}
-                          alt=""
-                          style={{ width: 30, margin: '0 2px' }}
-                        />
+                        <div key={ci} style={{ position: 'relative' }}>
+                          <img
+                            src={cardImageUrl(c)}
+                            alt=""
+                            style={{ width: 30, margin: '0 2px' }}
+                          />
+                          {c.type === 'wild' && c.assignedValue !== undefined && (
+                            <div style={{
+                              position: 'absolute',
+                              bottom: '0',
+                              right: '0',
+                              backgroundColor: 'white',
+                              borderRadius: '50%',
+                              width: '14px',
+                              height: '14px',
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              fontWeight: 'bold',
+                              fontSize: '8px',
+                              border: '1px solid black'
+                            }}>
+                              {c.assignedValue}
+                            </div>
+                          )}
+                        </div>
                       ))}
                       <button
                         disabled={

@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import PhaseDisplay from './PhaseDisplay.jsx';
 import { cardImageUrl } from '../utils/cardImages.js';
 import Scoreboard from './Scoreboard';
+import LayPhaseModal from './LayPhaseModal.jsx';
 
 export default function GameBoard({
   hands,
@@ -21,6 +22,7 @@ export default function GameBoard({
   const currentPhaseIndex = currentPlayer?.phaseIndex || 0;
   const [handOrder, setHandOrder] = useState(hands[localId] || []);
   const [selectedIndices, setSelectedIndices] = useState([]);
+  const [showLayPhaseModal, setShowLayPhaseModal] = useState(false);
   
   const isMyTurn = localId === currentTurn;
   const topDiscard = discardPile[0] || null;
@@ -93,6 +95,15 @@ export default function GameBoard({
     setHandOrder(newOrder);
     // Note: If selectedIndices tracked IDs, this would need to update based on IDs, not indices.
   }
+
+  // Handle laying a phase with the new modal
+  const handleLayPhase = (cardsWithAssignments, groups) => {
+    socket.emit('layPhase', {
+      room,
+      phaseIndex: currentPhaseIndex,
+      cards: cardsWithAssignments,
+    });
+  };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'var(--spacing-lg)' }}>
@@ -236,16 +247,8 @@ export default function GameBoard({
           justifyContent: 'center'
         }}>
           <button
-            disabled={!isMyTurn || !hasDrawn || selectedIndices.length === 0}
-            onClick={() => {
-              const cardsToLay = selectedIndices.map(i => handOrder[i]);
-              socket.emit('layPhase', {
-                room,
-                phaseIndex: currentPhaseIndex,
-                cards: cardsToLay,
-              });
-              setSelectedIndices([]);
-            }}
+            disabled={!isMyTurn || !hasDrawn || hasCompletedCurrentPhase}
+            onClick={() => setShowLayPhaseModal(true)}
           >
             Lay Phase (Phase {currentPhaseIndex + 1})
           </button>
@@ -294,6 +297,15 @@ export default function GameBoard({
 
       {/* ─── SCOREBOARD ─── */}
       <Scoreboard players={players} localId={localId} />
+
+      {/* ─── LAY PHASE MODAL ─── */}
+      <LayPhaseModal
+        show={showLayPhaseModal}
+        onClose={() => setShowLayPhaseModal(false)}
+        phaseIndex={currentPhaseIndex}
+        hand={handOrder}
+        onLayPhase={handleLayPhase}
+      />
     </div>
   );
 }

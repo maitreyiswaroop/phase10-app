@@ -6,7 +6,8 @@ import {
     deal,
     validatePhase,
     validateHit,
-    PHASES
+    PHASES,
+    validatePhaseWithAssignedWilds
   } from './gameLogic.js';
   
   export function registerSockets(io) {
@@ -15,7 +16,7 @@ import {
   
       // Create Room
       socket.on('createRoom', ({ username, room, isPrivate, accessKey }) => {
-        const expiresAt = Date.now() + 1000 * 60 * 15; // 15 min to rejoin
+        const expiresAt = Date.now() + 1000 * 60 * 15; // 15 min to rejoin
         rooms[room] = {
           players:    [{ socketId: socket.id, username, phaseIndex: 0, score: 0 }],
           isPrivate:  !!isPrivate,
@@ -265,15 +266,29 @@ import {
             return;
           }
   
-        const hand     = r.hands[socket.id];
+        const hand = r.hands[socket.id];
         const selected = cards;
-  
-        const { ok, groups } = validatePhase(phaseIndex, selected);
+        
+        // Check if there are wild cards with assigned values
+        const hasAssignedWilds = selected.some(card => card.type === 'wild' && card.assignedValue !== undefined);
+        
+        let validationResult;
+        if (hasAssignedWilds) {
+          // Use the new validation function that handles assigned wilds
+          validationResult = validatePhaseWithAssignedWilds(phaseIndex, [selected]);
+        } else {
+          // Use the original validation function
+          validationResult = validatePhase(phaseIndex, selected);
+        }
+        
+        const { ok, groups } = validationResult;
+        
         if (!ok) {
           socket.emit('error', 'Invalid phase combination for Phase ' + (phaseIndex + 1));
           return;
         }
   
+        // Remove the cards from the player's hand
         selected.forEach(card => {
           const ix = hand.findIndex(c =>
             c.type === card.type &&
@@ -283,8 +298,29 @@ import {
           if (ix >= 0) hand.splice(ix, 1);
         });
   
+        // Store the laid phase with any wild card assignments
         r.laid[phaseIndex] = r.laid[phaseIndex] || {};
-        r.laid[phaseIndex][socket.id] = groups;
+        
+        // Preserve wild card assignments in the stored groups
+        const groupsWithAssignments = groups.map(group => 
+          group.map(card => {
+            // Find if this card has an assigned value in the original selected cards
+            if (card.type === 'wild') {
+              const originalWild = selected.find(c => 
+                c.type === 'wild' && 
+                c.id === card.id && 
+                c.assignedValue !== undefined
+              );
+              
+              if (originalWild && originalWild.assignedValue !== undefined) {
+                return { ...card, assignedValue: originalWild.assignedValue };
+              }
+            }
+            return card;
+          })
+        );
+        
+        r.laid[phaseIndex][socket.id] = groupsWithAssignments;
         
         // Check if hand is empty after laying down cards
         if (hand.length === 0) {

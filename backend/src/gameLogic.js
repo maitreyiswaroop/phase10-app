@@ -112,13 +112,24 @@ function validateSets(cards, setLengths) {
   // Count cards by value, accounting for wilds
   const valueCounts = {};
   let wildCount = 0;
+  const assignedWilds = {};
   
   for (const card of cards) {
     if (card.type === 'wild') {
-      wildCount++;
+      if (card.assignedValue !== undefined) {
+        // If the wild card has an assigned value, count it as that value
+        assignedWilds[card.assignedValue] = (assignedWilds[card.assignedValue] || 0) + 1;
+      } else {
+        wildCount++;
+      }
     } else if (card.type === 'number') {
       valueCounts[card.value] = (valueCounts[card.value] || 0) + 1;
     } // Skip cards can't be used in phases
+  }
+  
+  // Add assigned wilds to value counts
+  for (const [value, count] of Object.entries(assignedWilds)) {
+    valueCounts[value] = (valueCounts[value] || 0) + count;
   }
   
   // Sort values by count (descending)
@@ -141,16 +152,29 @@ function validateSets(cards, setLengths) {
       if (needed <= remainingWilds) {
         // Grab the actual card objects from the input array
         const value = sortedValues[i].value;
-        // pick that many real cards of that value
+        
+        // Get number cards of this value
         const normalCards = cards.filter(
           c => c.type === 'number' && c.value === value
-        ).slice(0, sortedValues[i].count);
-        // pick the needed number of wilds
-        const wildCards = cards.filter(c => c.type === 'wild').slice(0, needed);
-
-        groups.push([...normalCards, ...wildCards]);
-        sortedValues[i].count = 0;
-        remainingWilds -= needed;
+        ).slice(0, Math.min(sortedValues[i].count, length));
+        
+        // Get wild cards already assigned to this value
+        const preassignedWilds = cards.filter(
+          c => c.type === 'wild' && c.assignedValue === value
+        );
+        
+        // Calculate how many additional wilds we need
+        const additionalWildsNeeded = length - normalCards.length - preassignedWilds.length;
+        
+        // Get unassigned wild cards
+        const unassignedWilds = cards.filter(
+          c => c.type === 'wild' && c.assignedValue === undefined
+        ).slice(0, additionalWildsNeeded);
+        
+        // Combine all cards for this set
+        groups.push([...normalCards, ...preassignedWilds, ...unassignedWilds]);
+        sortedValues[i].count = Math.max(0, sortedValues[i].count - length);
+        remainingWilds -= additionalWildsNeeded;
         found = true;
         break;
       }
@@ -169,19 +193,27 @@ function validateSets(cards, setLengths) {
  * @returns {Object} Validation result with groups
  */
 function validateRuns(cards, runLengths) {
-  // Group cards by value, accounting for wilds
+  // Group cards by value, accounting for wilds and assigned wilds
   const valueMap = {};
-  const wilds = cards.filter(c => c.type === 'wild');
+  const unassignedWilds = [];
   
   for (const card of cards) {
-    if (card.type === 'number') {
+    if (card.type === 'wild') {
+      if (card.assignedValue !== undefined) {
+        // If wild has an assigned value, add it to that value's array
+        if (!valueMap[card.assignedValue]) valueMap[card.assignedValue] = [];
+        valueMap[card.assignedValue].push(card);
+      } else {
+        unassignedWilds.push(card);
+      }
+    } else if (card.type === 'number') {
       if (!valueMap[card.value]) valueMap[card.value] = [];
       valueMap[card.value].push(card);
     }
   }
   
   const groups = [];
-  let remainingWilds = wilds.length;
+  let remainingWilds = unassignedWilds.length;
   
   for (const length of runLengths) {
     let foundRun = false;
@@ -209,11 +241,11 @@ function validateRuns(cards, runLengths) {
       
       if (run.length + neededWilds.length === length) {
         // We found a valid run
-        const wildCardsToUse = wilds.slice(0, neededWilds.length);
+        const wildCardsToUse = unassignedWilds.slice(0, neededWilds.length);
         groups.push([...run, ...wildCardsToUse]);
         remainingWilds -= neededWilds.length;
         // Remove used wilds from the available wilds
-        wilds.splice(0, neededWilds.length);
+        unassignedWilds.splice(0, neededWilds.length);
         foundRun = true;
         break;
       }
@@ -306,6 +338,24 @@ function validateMixed(cards, requirements) {
     ok: true, 
     groups: [...setResult.groups, ...runResult.groups] 
   };
+}
+
+/**
+ * Validates a phase with explicitly assigned wild card values
+ * @param {number} phaseIndex - The phase index (0-9)
+ * @param {Array} cardGroups - Array of card groups, each representing a set, run, or color group
+ * @returns {Object} Validation result with groups
+ */
+export function validatePhaseWithAssignedWilds(phaseIndex, cardGroups) {
+  if (phaseIndex < 0 || phaseIndex >= PHASES.length) {
+    return { ok: false, groups: [] };
+  }
+  
+  // Flatten all cards for validation
+  const allCards = cardGroups.flat();
+  
+  // Use the standard validation function
+  return PHASES[phaseIndex].validate(allCards);
 }
 
 /**
