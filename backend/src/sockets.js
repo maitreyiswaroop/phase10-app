@@ -397,7 +397,7 @@ import {
       });
   
       // Hit (add) a card to someone's laid meld
-      socket.on('hitPhase', ({ room, phaseIndex, targetId, groupIndex, card }) => {
+      socket.on('hitPhase', ({ room, phaseIndex, targetId, groupIndex, card, chosenWildValue }) => {
         const r = rooms[room];
         if (!r) return;
         if (!r.laid[phaseIndex]?.[targetId]) return;
@@ -414,12 +414,36 @@ import {
       
         const currentGroup = r.laid[phaseIndex][targetId][groupIndex];
         
-        // Use validateHit instead of validatePhase
-        const isValidHit = validateHit(phaseIndex, currentGroup, candidate);
-        if (!isValidHit) {
+        // Use enhanced validateHit that returns { ok, possibleValues, assignedValue }
+        const hitResult = validateHit(phaseIndex, currentGroup, candidate);
+        if (!hitResult.ok) {
           socket.emit('error', 'Invalid hit: This card cannot be added to this meld');
           hand.splice(idx, 0, candidate);
           return;
+        }
+
+        // Handle wild card value assignment
+        if (candidate.type === 'wild') {
+          if (hitResult.possibleValues) {
+            // Multiple possible values
+            if (!chosenWildValue || !hitResult.possibleValues.includes(chosenWildValue)) {
+              // Send possible values to client and put card back in hand
+              socket.emit('chooseWildValue', {
+                possibleValues: hitResult.possibleValues,
+                card: candidate,
+                phaseIndex,
+                targetId,
+                groupIndex
+              });
+              hand.splice(idx, 0, candidate);
+              return;
+            }
+            // User has chosen a valid value
+            candidate.assignedValue = chosenWildValue;
+          } else if (hitResult.assignedValue !== undefined) {
+            // Single possible value
+            candidate.assignedValue = hitResult.assignedValue;
+          }
         }
       
         r.laid[phaseIndex][targetId][groupIndex] = [...currentGroup, candidate];

@@ -359,11 +359,75 @@ export function validatePhaseWithAssignedWilds(phaseIndex, cardGroups) {
 }
 
 /**
+ * Determines the appropriate value for a wild card in a set
+ * @param {Array} group - The existing cards in the set
+ * @returns {number|null} The value for the wild card, or null if cannot be determined
+ */
+function determineWildValueForSet(group) {
+  // Find the first non-wild card to get the set value
+  const numberCard = group.find(c => c.type === 'number');
+  return numberCard ? numberCard.value : null;
+}
+
+/**
+ * Determines possible values for a wild card in a run
+ * @param {Array} group - The existing cards in the run
+ * @returns {Array<number>} Array of possible values for the wild card
+ */
+function determineWildValuesForRun(group) {
+  // Sort cards by value, considering assigned wilds
+  const sortedCards = group
+    .filter(c => c.type === 'number' || (c.type === 'wild' && c.assignedValue !== undefined))
+    .sort((a, b) => {
+      const valA = a.type === 'wild' ? a.assignedValue : a.value;
+      const valB = b.type === 'wild' ? b.assignedValue : b.value;
+      return valA - valB;
+    });
+
+  if (sortedCards.length === 0) return [];
+  
+  const possibleValues = new Set();
+  
+  // Check each gap in the sequence
+  let prevValue = sortedCards[0].type === 'wild' ? sortedCards[0].assignedValue : sortedCards[0].value;
+  for (let i = 1; i < sortedCards.length; i++) {
+    const currentCard = sortedCards[i];
+    const currentValue = currentCard.type === 'wild' ? currentCard.assignedValue : currentCard.value;
+    
+    // If there's a gap bigger than 1, any number in between could be valid
+    if (currentValue - prevValue > 1) {
+      for (let val = prevValue + 1; val < currentValue; val++) {
+        if (val >= 1 && val <= 12) {  // Ensure value is within valid range
+          possibleValues.add(val);
+        }
+      }
+    }
+    prevValue = currentValue;
+  }
+  
+  // Check if wild could go at the start
+  const firstValue = sortedCards[0].type === 'wild' ? sortedCards[0].assignedValue : sortedCards[0].value;
+  if (firstValue > 1) {
+    possibleValues.add(firstValue - 1);
+  }
+  
+  // Check if wild could go at the end
+  const lastValue = sortedCards[sortedCards.length - 1].type === 'wild' ? 
+    sortedCards[sortedCards.length - 1].assignedValue : 
+    sortedCards[sortedCards.length - 1].value;
+  if (lastValue < 12) {
+    possibleValues.add(lastValue + 1);
+  }
+
+  return Array.from(possibleValues).sort((a, b) => a - b);
+}
+
+/**
  * Validates if a card can be added to an existing meld
  * @param {number} phaseIndex - The phase index
  * @param {Array} existingGroup - The existing cards in the meld
  * @param {Object} newCard - The card to add
- * @returns {boolean} Whether the hit is valid
+ * @returns {Object} { ok: boolean, possibleValues?: number[], assignedValue?: number }
  */
 export function validateHit(phaseIndex, existingGroup, newCard) {
     // For sets (all cards have same value)
@@ -371,37 +435,44 @@ export function validateHit(phaseIndex, existingGroup, newCard) {
                                (c.type === 'number' && existingGroup[0].type === 'number' && 
                                 c.value === existingGroup[0].value))) {
       // New card must be wild or match the set value
-      return newCard.type === 'wild' || 
-             (newCard.type === 'number' && 
-              existingGroup[0].type === 'number' &&
-              newCard.value === existingGroup[0].value);
+      if (newCard.type === 'wild') {
+        const setValue = determineWildValueForSet(existingGroup);
+        return { ok: true, assignedValue: setValue };
+      }
+      return { 
+        ok: newCard.type === 'number' && 
+            existingGroup[0].type === 'number' &&
+            newCard.value === existingGroup[0].value 
+      };
     }
     
     // For runs (sequential values)
     if (existingGroup.some(c => c.type === 'number')) {
-      // allow any hit that lets the cards permute into a valid run
+      if (newCard.type === 'wild') {
+        const possibleValues = determineWildValuesForRun(existingGroup);
+        if (possibleValues.length === 0) return { ok: false };
+        if (possibleValues.length === 1) {
+          return { ok: true, assignedValue: possibleValues[0] };
+        }
+        return { ok: true, possibleValues };
+      }
+      // For number cards, just check if it makes a valid run
       const newGroup = [...existingGroup, newCard];
       const { ok } = validateRuns(newGroup, [newGroup.length]);
-      return ok;
+      return { ok };
     }
-    // === END REPLACEMENT ===
-  
-    // For color‐group (Phase 8)…
+    
+    // For color groups (Phase 8)
     if (phaseIndex === 7) {
       const groupColor = existingGroup.find(c => c.type === 'number')?.color;
-      return newCard.type === 'wild' ||
-             (newCard.type === 'number' && newCard.color === groupColor);
+      return { 
+        ok: newCard.type === 'wild' ||
+            (newCard.type === 'number' && newCard.color === groupColor)
+      };
     }
     
-    // For color groups
-    if (phaseIndex === 7) { // Phase 8 is "Seven cards of one color"
-      const groupColor = existingGroup.find(c => c.type === 'number')?.color;
-      return newCard.type === 'wild' || 
-             (newCard.type === 'number' && newCard.color === groupColor);
-    }
-    
-    return false;
-  }
+    return { ok: false };
+}
 
 /** Returns { ok: boolean, groups: [...] } */
 export function validatePhase(phaseIndex, cardArray) {

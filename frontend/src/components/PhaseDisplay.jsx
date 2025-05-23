@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cardImageUrl } from '../utils/cardImages.js';
+import WildValueModal from './WildValueModal.jsx';
 
 // Add PHASE_DESCRIPTIONS from your gameLogic
 const PHASE_DESCRIPTIONS = [
@@ -29,6 +30,31 @@ export default function PhaseDisplay({
   hasCompletedCurrentPhase,
   isMyTurn
 }) { 
+  const [wildValueChoice, setWildValueChoice] = useState(null);
+  
+  // Handle wild value selection modal
+  React.useEffect(() => {
+    socket.on('chooseWildValue', (data) => {
+      setWildValueChoice(data);
+    });
+    return () => socket.off('chooseWildValue');
+  }, [socket]);
+
+  const handleWildValueSelect = (value) => {
+    if (!wildValueChoice) return;
+    
+    const { card, phaseIndex, targetId, groupIndex } = wildValueChoice;
+    socket.emit('hitPhase', {
+      room,
+      phaseIndex,
+      targetId,
+      groupIndex,
+      card,
+      chosenWildValue: value
+    });
+    setWildValueChoice(null);
+  };
+
   // Get the current player's phase description
 //   const isMyTurn = localId === players.find(p => p.socketId === localId)?.socketId;
   const description = PHASE_DESCRIPTIONS[phaseIndex] || '';
@@ -149,6 +175,15 @@ export default function PhaseDisplay({
           );
         })}
       </div>
+
+      {/* Wild Value Selection Modal */}
+      {wildValueChoice && (
+        <WildValueModal
+          possibleValues={wildValueChoice.possibleValues}
+          onSelect={handleWildValueSelect}
+          onCancel={() => setWildValueChoice(null)}
+        />
+      )}
     </div>
   );
 }
