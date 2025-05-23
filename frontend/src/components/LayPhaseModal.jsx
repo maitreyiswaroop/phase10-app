@@ -398,7 +398,12 @@ export default function LayPhaseModal({
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--color-border)',
                       backgroundColor: 'var(--color-surface)',
-                      cursor: 'pointer'
+                      color: 'var(--color-text)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px'
                     }}
                   >
                     {value}
