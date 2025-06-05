@@ -28,7 +28,8 @@ import {
           currentTurn: null,
           hasDrawn:   false,
           laid:       {},    // laid[phaseIndex] = { socketId: [cards] }
-          roundNumber: 1
+          roundNumber: 1,
+          currentStarterIndex: 0  // Track who starts each round
         };
         socket.join(room);
         io.to(room).emit('joinedRoom', {
@@ -91,6 +92,7 @@ import {
         if (!r) return;
 
         if (!r.roundNumber) r.roundNumber = 1;
+        if (r.currentStarterIndex === undefined) r.currentStarterIndex = 0;
   
         const fullDeck = shuffle(createDeck());
         const { hands, deck: remaining } = deal(fullDeck, r.players);
@@ -112,12 +114,14 @@ import {
         // const starter  = r.deck.shift();
         // r.discard.push(starter);
   
-        r.currentTurn = r.players[0].socketId;
+        // Set the starting player based on currentStarterIndex
+        const startingPlayerIndex = r.currentStarterIndex % r.players.length;
+        r.currentTurn = r.players[startingPlayerIndex].socketId;
         r.hasDrawn    = false;
         r.laid        = {};
   
         emitState(room, r, io);
-        console.log('📤 gameState (start) →', room);
+        console.log('📤 gameState (start) →', room, 'Starting player:', r.players[startingPlayerIndex].username);
       });
   
       // Draw a card from deck
@@ -461,6 +465,9 @@ import {
         // Increment round number
         r.roundNumber++;
         
+        // Rotate the starting player for the new round
+        r.currentStarterIndex = (r.currentStarterIndex + 1) % r.players.length;
+        
         // Track which players completed their phase
         const completedPhases = {};
         for (const phaseIndex in r.laid) {
@@ -508,12 +515,14 @@ import {
         
         r.discard.push(starter);
         
-        r.currentTurn = r.players[0].socketId;
+        // Set the starting player based on the rotated currentStarterIndex
+        const startingPlayerIndex = r.currentStarterIndex % r.players.length;
+        r.currentTurn = r.players[startingPlayerIndex].socketId;
         r.hasDrawn = false;
         r.laid = {};  // Reset laid phases for the new round
         
         emitState(room, r, io);
-        console.log('📤 gameState (new round) →', room);
+        console.log('📤 gameState (new round) →', room, 'Round', r.roundNumber, 'Starting player:', r.players[startingPlayerIndex].username);
     });
   
       socket.on('disconnect', () => {
@@ -531,7 +540,9 @@ import {
       discard:     r.discard,
       currentTurn: r.currentTurn,
       hasDrawn:    r.hasDrawn,
-      laid:        r.laid
+      laid:        r.laid,
+      currentStarterIndex: r.currentStarterIndex,
+      roundNumber: r.roundNumber
     });
   }
   

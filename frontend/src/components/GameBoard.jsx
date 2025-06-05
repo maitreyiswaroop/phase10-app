@@ -17,6 +17,8 @@ export default function GameBoard({
   currentTurn,
   hasDrawn,
   laid,
+  currentStarterIndex,
+  roundNumber,
 }) {
   const currentPlayer = players.find(p => p.socketId === localId);
   const currentPhaseIndex = currentPlayer?.phaseIndex || 0;
@@ -296,7 +298,7 @@ export default function GameBoard({
       </div>
 
       {/* ─── SCOREBOARD ─── */}
-      <Scoreboard players={players} localId={localId} />
+      <Scoreboard players={players} localId={localId} currentStarterIndex={currentStarterIndex} roundNumber={roundNumber} />
 
       {/* ─── LAY PHASE MODAL ─── */}
       <LayPhaseModal

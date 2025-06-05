@@ -185,6 +185,8 @@ export default function App() {
         currentTurn={gameState.currentTurn}
         laid={gameState.laid}
         hasDrawn={gameState.hasDrawn}
+        currentStarterIndex={gameState.currentStarterIndex}
+        roundNumber={gameState.roundNumber}
       />
     );
   }
