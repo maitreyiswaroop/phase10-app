@@ -80,7 +80,6 @@ import {
         const p = r.players.find(p => p.username === username);
         if (!p) return socket.emit('error', 'Player not in room');
         p.socketId = socket.id;         // update socket.id
-        toast && clearTimeout(toast);   // if you have any pending timeout...
         socket.join(room);
         io.to(room).emit('joinedRoom', { room, players: r.players });
         emitState(room, r, io);
