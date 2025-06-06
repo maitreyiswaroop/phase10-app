@@ -1,22 +1,38 @@
-# Phase 10 Online
+# Phase 10 Online
 
-## Setup
+This project contains the frontend and backend for a "Phase 10 Online" game.
 
+## Development
+
+### Prerequisites
+- Node.js
+- npm
+
+### Running the application
 ```bash
 # Install backend dependencies and start server
-git clone <repo-url>
 cd phase10-app/backend
 npm install
 npm start
 
 # In another terminal, install frontend and start
-dcd phase10-app/frontend
+cd phase10-app/frontend
 npm install
 npm run dev
-CTRL C to cancel, not Z - will have to kill process if Z
+```
+
+## Deployment
+
+This application is containerized using Docker. To run the application, you need Docker and Docker Compose installed.
+
+```bash
+docker-compose up -d --build
+```
+
+The frontend will be available at [http://localhost:8080](http://localhost:8080) and the backend will be available at [http://localhost:3001](http://localhost:3001).
 
 ## TODOs:
-- Allow persistence - if I refresh the page, it should not take me to homescreen again; 
+- Allow persistence - if I refresh the page, it should not take me to homescreen again;
 - same player id joining same game should be able to pick up where they left off
 - joining via link?
 - UI style considerations

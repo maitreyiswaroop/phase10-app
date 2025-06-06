@@ -28,6 +28,10 @@ app.use(cors({
   }
 }));
 
+app.get("/", (req, res) => {
+  res.send({ status: "ok" });
+});
+
 const server = http.createServer(app);
 const io = new IOServer(server, {
   cors: {
@@ -41,8 +45,8 @@ io.on('connection', socket => {
   // ...your handlers...
 });
 
-// Use environment port or fallback to 3001
-const PORT = process.env.PORT || 3001;
+// Use environment port or fallback to 3000
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Backend listening on port ${PORT}`);
 });
