@@ -79,7 +79,17 @@ import {
         // find the old player entry by username
         const p = r.players.find(p => p.username === username);
         if (!p) return socket.emit('error', 'Player not in room');
-        p.socketId = socket.id;         // update socket.id
+        const oldSocketId = p.socketId;  // Store the old socket ID
+        p.socketId = socket.id;          // Update to new socket ID
+        // 🔧 FIX: Update the hands object key if a game is in progress
+        if (r.hands && r.hands[oldSocketId]) {
+          r.hands[socket.id] = r.hands[oldSocketId];  // Copy hand to new socket ID
+          delete r.hands[oldSocketId];                // Remove old socket ID entry
+        }
+        // 🔧 ADDITIONAL FIX: Update currentTurn if it was this player's turn
+        if (r.currentTurn === oldSocketId) {
+          r.currentTurn = socket.id;
+        }
         socket.join(room);
         io.to(room).emit('joinedRoom', { room, players: r.players });
         emitState(room, r, io);
