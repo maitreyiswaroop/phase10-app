@@ -57,6 +57,10 @@ export default function PhaseDisplay({
     setWildValueChoice(null);
   };
 
+  // Find the local player's justLaid flag
+  const localPlayer = players.find(p => p.socketId === localId);
+  const justLaid = localPlayer?.justLaid;
+
   // Get the current player's phase description
 //   const isMyTurn = localId === players.find(p => p.socketId === localId)?.socketId;
   const description = PHASE_DESCRIPTIONS[phaseIndex] || '';
@@ -160,7 +164,14 @@ export default function PhaseDisplay({
                           selectedIndices.length !== 1 ||
                           groups.length === 0 ||
                           !isMyTurn ||
-                          !hasCompletedCurrentPhase
+                          !hasCompletedCurrentPhase ||
+                          // Disable if justLaid and trying to hit on another player's meld
+                          (justLaid && p.socketId !== localId)
+                        }
+                        title={
+                          (justLaid && p.socketId !== localId)
+                            ? 'You may only hit on your own phase this turn.'
+                            : undefined
                         }
                         onClick={() => {
                           const cardToHit = handOrder[selectedIndices[0]];

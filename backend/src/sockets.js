@@ -18,7 +18,7 @@ import {
       socket.on('createRoom', ({ username, room, isPrivate, accessKey }) => {
         const expiresAt = Date.now() + 1000 * 60 * 15; // 15 min to rejoin
         rooms[room] = {
-          players:    [{ socketId: socket.id, username, phaseIndex: 0, score: 0 }],
+          players:    [{ socketId: socket.id, username, phaseIndex: 0, score: 0, justLaid: false }],
           isPrivate:  !!isPrivate,
           accessKey:  accessKey || '',
           expiresAt,
@@ -57,7 +57,7 @@ import {
           return;
         }
         // normal join
-        r.players.push({ socketId: socket.id, username, phaseIndex: 0, score: 0 });
+        r.players.push({ socketId: socket.id, username, phaseIndex: 0, score: 0, justLaid: false });
         socket.join(room);
         io.to(room).emit('joinedRoom', {
           room,
@@ -257,6 +257,11 @@ import {
           return; // skip normal emitState so no further moves are allowed
         }
   
+        // In discardCard, reset justLaid to false at end of turn
+        if (curIndex >= 0) {
+          r.players[curIndex].justLaid = false;
+        }
+  
         emitState(room, r, io);
         console.log('📤 gameState (discard) →', room, removed);
       });
@@ -404,6 +409,8 @@ import {
           return; // skip normal emitState so no further moves are allowed
         }
 
+        // When laying phase, set justLaid to true for the player
+        r.players[playerIndex].justLaid = true;
 
         emitState(room, r, io);
         console.log('📤 gameState (layPhase) →', room, phaseIndex, socket.id);
@@ -460,6 +467,15 @@ import {
         }
       
         r.laid[phaseIndex][targetId][groupIndex] = [...currentGroup, candidate];
+
+        // In hitPhase, restrict hitting on others' melds if justLaid is true
+        const player = r.players.find(p => p.socketId === socket.id);
+        if (player && player.justLaid && targetId !== socket.id) {
+          socket.emit('error', 'You may only hit on your own phase this turn.');
+          hand.splice(idx, 0, candidate);
+          return;
+        }
+
         emitState(room, r, io);
         console.log('📤 gameState (hitPhase) →', room, phaseIndex, targetId, groupIndex);
       });
