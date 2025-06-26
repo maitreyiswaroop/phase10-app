@@ -30,6 +30,9 @@ export default function GameBoard({
   const topDiscard = discardPile[0] || null;
   const hasCompletedCurrentPhase = !!laid[currentPhaseIndex]?.[localId];
 
+  // State for toggling scoreboard
+  const [showScoreboard, setShowScoreboard] = useState(false);
+
   // Whenever the server deals or updates your hand, reconcile local order
   useEffect(() => {
     const serverHand = hands[localId] || [];
@@ -292,7 +295,14 @@ export default function GameBoard({
       </div>
 
       {/* ─── SCOREBOARD ─── */}
-      <Scoreboard players={players} localId={localId} currentStarterIndex={currentStarterIndex} roundNumber={roundNumber} />
+      <div style={{ margin: '24px 0', textAlign: 'center' }}>
+        <button onClick={() => setShowScoreboard(v => !v)} style={{ padding: '8px 16px', fontSize: '1rem', borderRadius: '6px', cursor: 'pointer' }}>
+          {showScoreboard ? 'Hide Scoreboard' : 'Show Scoreboard'}
+        </button>
+      </div>
+      {showScoreboard && (
+        <Scoreboard players={players} localId={localId} currentStarterIndex={currentStarterIndex} roundNumber={roundNumber} />
+      )}
 
       {/* ─── LAY PHASE MODAL ─── */}
       <LayPhaseModal
