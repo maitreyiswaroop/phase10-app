@@ -29,7 +29,8 @@ export default function PhaseDisplay({
   setSelectedIndices,
   hasCompletedCurrentPhase,
   isMyTurn,
-  currentTurn
+  currentTurn,
+  hands
 }) { 
   const [wildValueChoice, setWildValueChoice] = useState(null);
   
@@ -106,7 +107,10 @@ export default function PhaseDisplay({
                 )}
                 <span>Phase {playerPhaseIndex + 1}</span>
               </div>
-
+              {/* Show number of cards remaining */}
+              <div style={{ fontSize: '0.95em', marginBottom: '4px', color: '#444' }}>
+                {typeof hands === 'object' && hands[p.socketId] ? `${hands[p.socketId].length} cards` : ''}
+              </div>
               {groups.length ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
                   {groups.map((grp, gi) => (

@@ -129,6 +129,7 @@ export default function GameBoard({
           hasCompletedCurrentPhase={hasCompletedCurrentPhase}
           isMyTurn={isMyTurn}
           currentTurn={currentTurn}
+          hands={hands}
         />
       </div>
 
@@ -268,31 +269,7 @@ export default function GameBoard({
         </div>
       </div>
 
-      {/* ─── OTHER PLAYERS ─── */}
-      <div className="card">
-        <h2>Other Players</h2>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 'var(--spacing-md)'
-        }}>
-          {players
-            .filter((p) => p.socketId !== localId)
-            .map((p) => (
-              <div 
-                key={p.socketId}
-                style={{
-                  padding: 'var(--spacing-md)',
-                  backgroundColor: 'var(--color-background)',
-                  borderRadius: 'var(--radius-sm)'
-                }}
-              >
-                <strong>{p.username}</strong>
-                <p>{hands[p.socketId]?.length || 0} cards</p>
-              </div>
-            ))}
-        </div>
-      </div>
+
 
       {/* ─── SCOREBOARD ─── */}
       <div style={{ margin: '24px 0', textAlign: 'center' }}>
