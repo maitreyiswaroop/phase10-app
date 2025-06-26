@@ -125,14 +125,8 @@ export default function GameBoard({
           setSelectedIndices={setSelectedIndices}
           hasCompletedCurrentPhase={hasCompletedCurrentPhase}
           isMyTurn={isMyTurn}
+          currentTurn={currentTurn}
         />
-      </div>
-
-      <div className="card">
-        <h2>Current Turn</h2>
-        <p>
-          {players.find(p => p.socketId === currentTurn)?.username || 'Unknown'}
-        </p>
       </div>
 
       {/* ─── DRAW CONTROLS ─── */}

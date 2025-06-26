@@ -28,7 +28,8 @@ export default function PhaseDisplay({
   handOrder,
   setSelectedIndices,
   hasCompletedCurrentPhase,
-  isMyTurn
+  isMyTurn,
+  currentTurn
 }) { 
   const [wildValueChoice, setWildValueChoice] = useState(null);
   
@@ -73,15 +74,17 @@ export default function PhaseDisplay({
           const playerPhaseIndex = p.phaseIndex || 0;
           const groups = (laid[playerPhaseIndex] && laid[playerPhaseIndex][p.socketId]) || [];
           const isCurrentPlayer = p.socketId === localId;
+          const isTurn = p.socketId === currentTurn;
 
           return (
             <div 
               key={p.socketId} 
               style={{
                 padding: 'var(--spacing-md)',
-                backgroundColor: 'var(--color-background)',
+                backgroundColor: isTurn ? '#e3f2fd' : 'var(--color-background)',
                 borderRadius: 'var(--radius-sm)',
-                border: isCurrentPlayer ? '2px solid var(--color-primary)' : 'none'
+                border: isTurn ? '2px solid #1976d2' : 'none',
+                boxShadow: isTurn ? '0 0 0 2px #1976d2' : 'none',
               }}
             >
               <div style={{ 
@@ -91,6 +94,16 @@ export default function PhaseDisplay({
                 marginBottom: 'var(--spacing-sm)'
               }}>
                 <strong>{p.username}</strong>
+                {isTurn && isCurrentPlayer && (
+                  <span style={{
+                    color: '#fff',
+                    background: '#1976d2',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    marginLeft: '8px',
+                    fontSize: '0.8em'
+                  }}>Your Turn</span>
+                )}
                 <span>Phase {playerPhaseIndex + 1}</span>
               </div>
 
