@@ -112,8 +112,12 @@ export default function GameBoard({
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'var(--spacing-lg)' }}>
-      <h1 className="text-center">Phase 10 Online</h1>
-
+      {/* Room owner header */}
+      {players && players.length > 0 && (
+        <h2 className="text-center" style={{ marginBottom: 'var(--spacing-lg)' }}>
+          {players[0].username}'s room
+        </h2>
+      )}
       <div className="card">
         <PhaseDisplay
           phaseIndex={currentPhaseIndex}
