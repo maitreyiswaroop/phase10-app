@@ -90,6 +90,15 @@ import {
         if (r.currentTurn === oldSocketId) {
           r.currentTurn = socket.id;
         }
+
+        // 🔧 NEW FIX: Update laid phases to use new socket ID
+        for (const phaseIndex in r.laid) {
+          if (r.laid[phaseIndex] && r.laid[phaseIndex][oldSocketId]) {
+            r.laid[phaseIndex][socket.id] = r.laid[phaseIndex][oldSocketId];
+            delete r.laid[phaseIndex][oldSocketId];
+          }
+        }
+
         socket.join(room);
         io.to(room).emit('joinedRoom', { room, players: r.players });
         emitState(room, r, io);
